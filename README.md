@@ -14,7 +14,6 @@ developed and tested in is listed in the following table. It should be
 noted that the prototypes were developed in ascending complexity, so not
 all software components were used within every prototype.
 
-|                        |             |                                                             |
 | Software Component     | Version     | Description                                                 |
 |------------------------|-------------|-------------------------------------------------------------|
 | Ubuntu                 | 20.04.6 LTS |                                                             |
