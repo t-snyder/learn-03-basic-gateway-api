@@ -70,7 +70,7 @@ helm install cert-manager --version 1.15 jetstack/cert-manager --namespace cert-
   --set config.enableGatewayAPI=true
 
 # Deploy mango into the mango namespace (http-echo)
-PROTODIR=/media/tim/ExtraDrive1/Projects/learn-basic-gateway-api/Proto-04
+PROTODIR=/media/tim/ExtraDrive1/Projects/learn-03-basic-gateway-api/Proto-04
 
 # Deploy Mango with tls
 kubectl create namespace mango

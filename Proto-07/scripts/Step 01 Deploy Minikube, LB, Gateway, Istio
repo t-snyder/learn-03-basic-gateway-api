@@ -78,7 +78,7 @@ helm install cert-manager --version 1.15 jetstack/cert-manager --namespace cert-
   --set "extraArgs={--feature-gates=ExperimentalGatewayAPISupport=true}"
   
 # Set path for kube deployments
-PROTODIR=/media/tim/ExtraDrive1/Projects/learn-basic-gateway-api/Proto-07
+PROTODIR=/media/tim/ExtraDrive1/Projects/learn-03-basic-gateway-api/Proto-07
 
 ########## Beginning of Apple App deployment ############################################
 #The following section deploys the apple (http echo) app using http into its own namespace

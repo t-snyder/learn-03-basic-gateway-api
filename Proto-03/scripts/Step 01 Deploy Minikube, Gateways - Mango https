@@ -54,7 +54,7 @@ kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/downloa
 istioctl install --set profile=ambient --skip-confirmation
 
 # Deploy apple app into the default namespace
-PROTODIR=/media/tim/ExtraDrive1/Projects/learn-basic-gateway-api/Proto-03
+PROTODIR=/media/tim/ExtraDrive1/Projects/learn-03-basic-gateway-api/Proto-03
 
 # Deploy Mango with tls
 kubectl create namespace mango

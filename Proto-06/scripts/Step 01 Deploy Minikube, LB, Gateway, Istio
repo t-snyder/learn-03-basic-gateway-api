@@ -78,7 +78,7 @@ helm install cert-manager --version 1.15 jetstack/cert-manager --namespace cert-
   --set "extraArgs={--feature-gates=ExperimentalGatewayAPISupport=true}"
   
 # Set path for kube deployment artifacts
-PROTODIR=/media/tim/ExtraDrive1/Projects/learn-basic-gateway-api/Proto-06
+PROTODIR=/media/tim/ExtraDrive1/Projects/learn-03-basic-gateway-api/Proto-06
 
 # Deploy Nginx with tls
 kubectl create namespace nginx

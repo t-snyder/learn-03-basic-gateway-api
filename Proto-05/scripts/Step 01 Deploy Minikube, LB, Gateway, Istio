@@ -61,7 +61,7 @@ kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/downloa
 istioctl install --set values.pilot.env.PILOT_ENABLE_ALPHA_GATEWAY_API=true --set profile=ambient --skip-confirmation
 
 # Deploy app
-PROTODIR=/media/tim/ExtraDrive1/Projects/learn-basic-gateway-api/Proto-05
+PROTODIR=/media/tim/ExtraDrive1/Projects/learn-03-basic-gateway-api/Proto-05
 
 # Create root cert and key
 mkdir -p $PROTODIR/certs
@@ -89,14 +89,14 @@ kubectl apply -f $PROTODIR/kube/nginx-gateway.yaml
 
 # Check the status - wait until the Address is available and PROGRAMMED=True
 kubectl get gateway
-kubectl wait --for=condition=programmed gtw mygateway
+kubectl wait --for=condition=programmed gtw nginx-gateway
 
 # Add the app to the service mesh by labeling the (default) namespace.
 # Note - this automatically starts mTls between the pods 
 kubectl label namespace default istio.io/dataplane-mode=ambient
 
-export INGRESS_HOST=$(kubectl get gtw mygateway -o jsonpath='{.status.addresses[0].value}')
-export SECURE_INGRESS_PORT=$(kubectl get gtw mygateway -o jsonpath='{.spec.listeners[?(@.name=="https")].port}')
+export INGRESS_HOST=$(kubectl get gtw nginx-gateway -o jsonpath='{.status.addresses[0].value}')
+export SECURE_INGRESS_PORT=$(kubectl get gtw nginx-gateway -o jsonpath='{.spec.listeners[?(@.name=="https")].port}')
 
 echo "INGRESS_HOST = $INGRESS_HOST"
 echo "SECURE_INGRESS_PORT = $SECURE_INGRESS_PORT"

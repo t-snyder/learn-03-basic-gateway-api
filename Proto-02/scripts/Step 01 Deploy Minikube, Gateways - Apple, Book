@@ -34,18 +34,18 @@ minikube addons enable dashboard
 minikube dashboard
 
 # Open up a new (2nd) terminal
-# Install the Kubernetes Gateway API CRDs
+# Install the Kubernetes Gateway API CRDs - standard
 kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.1.0/standard-install.yaml
 
 # Install istio in ambient mode
 istioctl install --set profile=ambient --skip-confirmation
 
 # Deploy apple app into the default namespace
-PROTODIR=/media/tim/ExtraDrive1/Projects/learn-basic-gateway-api/Proto-02
+PROTODIR=/media/tim/ExtraDrive1/Projects/learn-03-basic-gateway-api/Proto-02
 kubectl create namespace apple
 kubectl apply -n apple -f $PROTODIR/kube/apple.yaml
 
-# Verify they are running - this takes about 2 minutes before it is ready
+# Verify they are running - this takes about 30 seconds before it is ready
 kubectl get pods -n apple
 
 # Deploy apple-gateway

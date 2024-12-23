@@ -25,8 +25,6 @@ minikube delete
 # Note - normally I use kvm2 as the vm-driver. However istio cni in ambient mode does not
 # currently work with kvm2 due to cni incompatibility. The work around is to use the 
 # docker vm-driver.
-#minikube start --cpus 4 --memory 12288 --vm-driver kvm2 --disk-size 100g
-#minikube start --cpus 4 --memory 12288 --vm-driver kvm2 --cni kindnet --disk-size 100g
 minikube start --cpus 4 --memory 12288 --vm-driver docker --cni kindnet --disk-size 100g
 
 # Addons
@@ -36,15 +34,14 @@ minikube addons enable dashboard
 minikube dashboard
 
 # Open up a new (2nd) terminal
-# Install the Kubernetes Gateway API CRDs
+# Install the Kubernetes Gateway API CRDs- standard
 kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.1.0/standard-install.yaml
 
 # Install istio in ambient mode
 istioctl install --set profile=ambient --skip-confirmation
 
-# Option 1 - use default namespace
 # Deploy Sample Bookinfo app into the default namespace
-PROTODIR=/media/tim/ExtraDrive1/Projects/learn-basic-gateway-api/Proto-01/
+PROTODIR=/media/tim/ExtraDrive1/Projects/learn-03-basic-gateway-api/Proto-01/
 kubectl apply -f $PROTODIR/kube/bookinfo.yaml
 kubectl apply -f $PROTODIR/kube/bookinfo-versions.yaml
 
@@ -90,6 +87,7 @@ kubectl port-forward -n apple svc/apple-gateway-istio 8090:80
 # Open a new browser tab and go to
 http://localhost:8090/apple
 
+# Test via terminal
 curl -kvtL http://localhost:8090/apple
 
 # Successful response = Apple Service has been invoked via the Gateway
