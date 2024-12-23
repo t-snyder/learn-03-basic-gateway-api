@@ -184,7 +184,7 @@ lightweight, ambient proxies that run as daemons on each node.
     for organizations looking for a simplified service mesh solution
     with minimal overhead.
 
-## The Prototypes
+The Prototypes
 
 The development and runtime environment that these prototypes were
 developed and tested in is listed in the following table. It should be
