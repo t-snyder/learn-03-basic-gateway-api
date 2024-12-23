@@ -1,0 +1,29 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: nginx-tls-cert-issuer
+spec:
+  isCA: true
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  commonName: nginx.example.com
+  secretName: nginx-server-certs
+  issuerRef:
+    name: root-tls-cert-issuer
+    kind: Issuer
+    group: cert-manager.io
+
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: nginx-tls-cert-issuer
+spec:
+  ca:
+    secretName: nginx-server-certs
+
+
+
+

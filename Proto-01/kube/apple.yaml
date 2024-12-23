@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: apple-svc
+  labels:
+    app: apple-echo
+    service: apple-svc
+spec:
+  ports:
+  - port: 5678
+    name: http
+  selector:
+    app: apple-echo
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: apple-sa
+  labels:
+    account: apple-echo
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apple-echo
+  labels:
+    app: apple-echo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: apple-echo
+  template:
+    metadata:
+      labels:
+        app: apple-echo
+    spec:
+      serviceAccountName: apple-sa
+      containers:
+      - name: apple
+        image: hashicorp/http-echo
+        imagePullPolicy: IfNotPresent
+        args:
+          - "-text=Apple Service has been invoked via the Gateway"
+        ports:
+        - containerPort: 5678
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+---

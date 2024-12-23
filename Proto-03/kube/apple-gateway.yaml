@@ -1,0 +1,29 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: apple-gateway
+spec:
+  gatewayClassName: istio
+  listeners:
+  - name: http
+    port: 80
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: Same
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: apple-route
+spec:
+  parentRefs:
+  - name: apple-gateway
+  rules:
+  - matches:
+    - path:
+        type: Exact
+        value: /apple
+    backendRefs:
+    - name: apple-svc
+      port: 5678

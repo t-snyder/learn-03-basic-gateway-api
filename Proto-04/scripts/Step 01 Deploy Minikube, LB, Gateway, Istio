@@ -1,0 +1,118 @@
+#!/bin/bash
+
+# Step 1 - Deploys and configures the following:
+#            a) minikube, minikube addons (dashboard, metrics-server);
+#            b) installs and configures metallb loadbalancer
+#            c) installs istio in ambient mode
+#            d) installs kubernetes gateway API CRDs
+#            e) creates cert-manager namespace
+#            f) installs cert-manager gateway CRDs
+#            g) installs cert-manager with gateway enabled
+#            h) installs mango http-echo app with gateway HTTPRoute
+
+# This learning prototype was developed and tested using the following:
+#   a) Ubuntu             - 20.04.6 LTS
+#   b) Minikube           - 1.34.0
+#   c) Kubernetes         - 1.31.0
+#   d) Docker             - 27.2.0
+#   e) Cert-manager       - 1.15.3
+#   f) Istio              - 1.23.2
+#   g) Metallb            - 0.9.6
+#   h) Kubernetes Gateway - 1.1.0
+#   i) Machine config - Processor - Intel® Core™ i7-7700K CPU @ 4.20GHz × 8 
+#                       Memory    - 64 GB
+#            
+# Open terminal 1
+# Delete prior minikube ( if used and configured prior)
+minikube delete
+
+# Start minikube - configure the settings to your requirements and hardware
+# Note - normally I use kvm2 as the vm-driver. However istio cni in ambient mode does not
+# currently work with kvm2 due to cni incompatibility. The work around is to use the 
+# docker vm-driver.
+minikube start --cpus 4 --memory 12288 --vm-driver docker --cni kindnet --disk-size 100g
+
+# Addons
+minikube addons enable dashboard
+
+# Deploy the addon loadbalancer metallb
+minikube addons enable metallb
+
+# Configure loadbalancer ip address range within the same range as the minikube ip
+# The configuration is a start ip ( ie. 192.168.39.40 ) and an end ip that makes a 
+# range of 10 ip addresses. The range should not overlap the minikube ip
+minikube ip
+minikube addons configure metallb
+  -- Enter Load Balancer Start IP: 
+  -- Enter Load Balancer End IP:
+
+# Start dashboard
+minikube dashboard
+
+# Open up a new (2nd) terminal
+# Install the Kubernetes Gateway API CRDs
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.1.0/standard-install.yaml
+
+# Install istio in ambient mode
+istioctl install --set profile=ambient --skip-confirmation
+
+#### Install cert-manager with the following steps ####
+# Create cert-manger namespace
+kubectl create namespace cert-manager
+
+# Deploy cert-manager gateway CRDs
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.15.3/cert-manager.crds.yaml
+
+# Deploy cert-manager with gateway api enabled
+helm install cert-manager --version 1.15 jetstack/cert-manager --namespace cert-manager \
+  --set config.apiVersion="controller.config.cert-manager.io/v1alpha1" \
+  --set config.kind="ControllerConfiguration" \
+  --set config.enableGatewayAPI=true
+
+# Deploy mango into the mango namespace (http-echo)
+PROTODIR=/media/tim/ExtraDrive1/Projects/learn-basic-gateway-api/Proto-04
+
+# Deploy Mango with tls
+kubectl create namespace mango
+
+# Deploy Mango gateway tls issuers and certs
+kubectl -n mango apply -f $PROTODIR/kube/root-tls-cert-issuer.yaml
+kubectl -n mango wait --timeout=30s --for=condition=Ready issuer/root-tls-cert-issuer
+
+# Use the self-signing issuer to generate the org Issuers, one for each org.
+kubectl -n mango apply -f $PROTODIR/kube/mango-tls-cert-issuer.yaml
+kubectl -n mango wait --timeout=30s --for=condition=Ready issuer/mango-tls-cert-issuer
+
+kubectl apply -f $PROTODIR/kube/mango.yaml -n mango
+
+# Review and wait until Ready
+kubectl get pods -n mango
+
+# Deploy mango-gateway and route
+kubectl apply -n mango -f $PROTODIR/kube/mango-gateway.yaml
+
+# Check the status - wait until the Address is available and PROGRAMMED=True
+kubectl get gateway -n mango
+kubectl wait --for=condition=programmed gtw mango-gateway -n mango
+
+# Add the app to the service mesh by labeling the (default) namespace.
+# Note - this automatically starts mTls between the pods 
+kubectl label namespace mango istio.io/dataplane-mode=ambient
+
+export INGRESS_HOST=$(kubectl get gtw mango-gateway -n mango -o jsonpath='{.status.addresses[0].value}')
+export INGRESS_PORT=$(kubectl get gtw mango-gateway -n mango -o jsonpath='{.spec.listeners[?(@.name=="http")].port}')
+export SECURE_INGRESS_PORT=$(kubectl get gtw mango-gateway -n mango -o jsonpath='{.spec.listeners[?(@.name=="https")].port}')
+
+echo "INGRESS_HOST = $INGRESS_HOST"
+echo "INGRESS_PORT = $INGRESS_PORT"
+echo "SECURE_INGRESS_PORT = $SECURE_INGRESS_PORT"
+
+# Obtain mango tls credential
+kubectl get secret mango-credential -n mango -o "jsonpath={.data['ca\.crt']}" | base64 -d > $PROTODIR/certs/tls.crt
+
+# Test https - Should return "juicy mango"
+curl -v -HHost:mango.example.com --resolve "mango.example.com:$SECURE_INGRESS_PORT:$INGRESS_HOST" \
+  --cacert $PROTODIR/certs/tls.crt "https://mango.example.com:$SECURE_INGRESS_PORT/mango"
+  
+# Test http
+curl -kL -HHost:mango.example.com --resolve "mango.example.com:80:$INGRESS_HOST" "http://mango.example.com:$INGRESS_PORT/mango" 

@@ -1,0 +1,96 @@
+#!/bin/bash
+
+# Step 1 - Deploys and configures the following:
+#            a) minikube, minikube addons (dashboard, metrics-server);
+#            b) installs kubernetes gateway API CRDs
+#            c) installs istio in ambient mode
+#            d) installs istio gateway example project - bookinfo
+#            e) installs http-echo project in separate namespace
+
+# This learning prototype was developed and tested using the following:
+#   a) Ubuntu             - 20.04.6 LTS
+#   b) Minikube           - 1.34.0
+#   c) Kubernetes         - 1.31.0
+#   d) Docker             - 27.2.0
+#   e) Istio              - 1.23.2
+#   f) Kubernetes Gateway - 1.1.0
+#   g) Machine config - Processor - Intel® Core™ i7-7700K CPU @ 4.20GHz × 8 
+#                       Memory    - 64 GB
+#            
+# Open terminal 1
+# Delete prior minikube ( if used and configured prior)
+minikube delete
+
+# Start minikube - configure the settings to your requirements and hardware
+# Note - normally I use kvm2 as the vm-driver. However istio cni in ambient mode does not
+# currently work with kvm2 due to cni incompatibility. The work around is to use the 
+# docker vm-driver.
+#minikube start --cpus 4 --memory 12288 --vm-driver kvm2 --disk-size 100g
+#minikube start --cpus 4 --memory 12288 --vm-driver kvm2 --cni kindnet --disk-size 100g
+minikube start --cpus 4 --memory 12288 --vm-driver docker --cni kindnet --disk-size 100g
+
+# Addons
+minikube addons enable dashboard
+
+# Start dashboard
+minikube dashboard
+
+# Open up a new (2nd) terminal
+# Install the Kubernetes Gateway API CRDs
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.1.0/standard-install.yaml
+
+# Install istio in ambient mode
+istioctl install --set profile=ambient --skip-confirmation
+
+# Option 1 - use default namespace
+# Deploy Sample Bookinfo app into the default namespace
+PROTODIR=/media/tim/ExtraDrive1/Projects/learn-basic-gateway-api/Proto-01/
+kubectl apply -f $PROTODIR/kube/bookinfo.yaml
+kubectl apply -f $PROTODIR/kube/bookinfo-versions.yaml
+
+# Verify they are running - this takes about 2 minutes before it is ready
+kubectl get pods
+
+# Deploy bookinfo-gateway into default namespace
+kubectl apply -f $PROTODIR/kube/bookinfo-gateway.yaml
+
+# Change the default Loadbalancer to ClusterIP ( wait until bookinfo-gateway pod is ready)
+kubectl annotate gateway bookinfo-gateway networking.istio.io/service-type=ClusterIP --namespace=default
+
+# Check the status
+kubectl get gateway
+
+# Verify external access to the bookinfo app
+# Go to another terminal and set the port forward
+kubectl port-forward svc/bookinfo-gateway-istio 8080:80
+
+# Open a new browser tab and go to - you should see the Comedy of Errors page
+http://localhost:8080/productpage
+
+# Deploy Apple App (http echo)
+# Create apple namespace
+kubectl create namespace apple
+
+# Deploy Apple
+kubectl apply -n apple -f $PROTODIR/kube/apple.yaml
+
+# Deploy Apple Gateway
+kubectl apply -n apple -f $PROTODIR/kube/apple-gateway.yaml
+
+kubectl annotate gateway apple-gateway networking.istio.io/service-type=ClusterIP --namespace=apple
+
+# Add the app to the service mesh by labeling the (default) namespace.
+# Note - this automatically starts mTls between the pods 
+kubectl label namespace apple istio.io/dataplane-mode=ambient
+
+# Verify external access to the bookinfo app
+# Go to another terminal and set the port forward
+kubectl port-forward -n apple svc/apple-gateway-istio 8090:80
+
+# Open a new browser tab and go to
+http://localhost:8090/apple
+
+curl -kvtL http://localhost:8090/apple
+
+# Successful response = Apple Service has been invoked via the Gateway
+

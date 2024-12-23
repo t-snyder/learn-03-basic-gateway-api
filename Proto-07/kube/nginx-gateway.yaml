@@ -1,0 +1,32 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: nginx-gateway
+spec:
+  gatewayClassName: istio
+  listeners:
+  - name: https
+    hostname: "nginx.example.com"
+    port: 443
+    protocol: TLS
+    tls:
+      mode: Passthrough
+    allowedRoutes:
+      namespaces:
+        from: All
+
+---
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TLSRoute
+metadata:
+  name: nginx
+spec:
+  parentRefs:
+  - name: nginx-gateway
+  hostnames:
+  - "nginx.example.com"
+  rules:
+  - backendRefs:
+    - name: my-nginx
+      port: 443
+
