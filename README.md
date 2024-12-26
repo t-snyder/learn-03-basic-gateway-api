@@ -41,6 +41,8 @@ all software components were used within every prototype.
 
   
 ## The Prototypes
+**Note :**<br>
+The commands within the shell files below are meant to be copy pasted (one or a few lines at a time) into a terminal, and not run as an automated bash script.
 
 ### Proto-01 -- Kubernetes Gateway API, Istio, Http transport
 
